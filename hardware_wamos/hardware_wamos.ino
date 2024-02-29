@@ -1,19 +1,24 @@
 
 #include <SoftwareSerial.h>
 // IMPORT ALL REQUIRED LIBRARIES
-
+#include <NewPing.h>
+#include <ArduinoJson.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
+#include <SPI.h>
+#include <Wire.h>
    
 //**********ENTER IP ADDRESS OF SERVER******************//
 
-#define HOST_IP     "localhost"       // REPLACE WITH IP ADDRESS OF SERVER ( IP ADDRESS OF COMPUTER THE BACKEND IS RUNNING ON) 
+#define HOST_IP     "172.16.192.106"       // REPLACE WITH IP ADDRESS OF SERVER ( IP ADDRESS OF COMPUTER THE BACKEND IS RUNNING ON) 
 #define HOST_PORT   "8080"            // REPLACE WITH SERVER PORT (BACKEND FLASK API PORT)
 #define route       "api/update"      // LEAVE UNCHANGED 
-#define idNumber    "620012345"       // REPLACE WITH YOUR ID NUMBER 
+#define idNumber    "620152511"       // REPLACE WITH YOUR ID NUMBER 
 
 // WIFI CREDENTIALS
-#define SSID        "YOUR WIFI"      // "REPLACE WITH YOUR WIFI's SSID"   
-#define password    "YOUR PASSWORD"  // "REPLACE WITH YOUR WiFi's PASSWORD" 
+#define SSID        "MonaConnect"      // "REPLACE WITH YOUR WIFI's SSID"   
+#define password    ""  // "REPLACE WITH YOUR WiFi's PASSWORD" 
 
 #define stay        100
  
@@ -23,11 +28,12 @@
 #define espRX         10
 #define espTX         11
 #define espTimeout_ms 300
-
+ int trigPin=3;
+ int echoPin=2;
+ long duration;
  
  
 /* Declare your functions below */
- 
  
 
 SoftwareSerial esp(espRX, espTX); 
@@ -36,7 +42,9 @@ SoftwareSerial esp(espRX, espTX);
 void setup(){
 
   Serial.begin(115200); 
-  // Configure GPIO pins here
+ 
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
 
  
 
@@ -46,7 +54,39 @@ void setup(){
 
 void loop(){ 
    
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  // read ultrasonic signals:
+  pinMode(echoPin, INPUT);
+  duration = pulseIn(echoPin, HIGH);
+
+  // Convert the time into a distance
+  double radar = (duration/2) / 74;
+
+  double waterHeight = 77.763 - radar;
+
+  double reserve = (3.1415 * pow(30.75,2)* waterHeight)/231.0;
+
+  double percentage_left = (waterHeight / 77.763)*100;
+   
   // send updates with schema ‘{"id": "student_id", "type": "ultrasonic", "radar": 0, "waterheight": 0, "reserve": 0, "percentage": 0}’
+
+  StaticJsonDocument<1000>doc;
+  char message[290]={0};
+
+  doc["id"] = idNumber;
+  doc["type"] = "ultrasonic";
+  doc["radar"] = radar;
+  doc["waterHeight"] = waterHeight;
+  doc["reserve"] = reserve;
+  doc["percentage"] = percentage_left;
+
+  serializeJson(doc,message);
+  espUpdate(message);
 
 
 
