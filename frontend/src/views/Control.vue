@@ -19,8 +19,6 @@
 </template>
 
 
-
-
 <script setup>
 /** JAVASCRIPT HERE */
 
